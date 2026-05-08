@@ -3,9 +3,8 @@ from tkinter import ttk, messagebox
 import datetime
 from abc import ABC, abstractmethod
 
-# =====================================================================
+
 # 1. MOTOR DEL SISTEMA (LOGS Y EXCEPCIONES)
-# =====================================================================
 
 class GestorLogs:
     archivo_log = "software_fj_eventos.log"
@@ -40,9 +39,9 @@ class ServicioInvalidoError(SoftwareFJError): pass
 class ReservaError(SoftwareFJError): pass
 
 
-# =====================================================================
+
 # 2. MODELO DE ENTIDADES (POO)
-# =====================================================================
+
 
 class EntidadBase(ABC):
     def __init__(self, identificador):
@@ -165,22 +164,31 @@ class Reserva:
             return self.costo_total
 
 
-# =====================================================================
-# 3. INTERFAZ GRÁFICA (VISTA - Tkinter)
-# =====================================================================
 
-class InterfazSoftwareFJ:
+# 3. INTERFAZ GRÁFICA
+
+class InterfazSoftwareFJ:    
     def __init__(self, root):
         self.root = root
         self.root.title("Software FJ - Gestión de Reservas")
-        self.root.geometry("650x550")
-        
+        self.root.geometry("650x550+600+200")
+        self.root.config(bg='white')
+        self.root.resizable(False,False)
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TButton", font=('Arial', 10,'bold'), background="white", foreground="red3", padding=5)
+        style.configure("TLabel", font=('Arial', 10,'bold'), background="white", foreground="black")
+        style.configure("TNotebook", background="white", borderwidth=0)
+        style.configure("TNotebook.Tab", background="white", foreground="black", font=("Arial", 10, "bold"))
+        style.map("TNotebook.Tab", background=[("selected", "red3")], foreground=[("selected", "white")],padding=[("selected", 5)])
+        style.configure("TFrame", background="white")
+
         # Base de datos en memoria (Listas)
         self.lista_clientes = []
         self.lista_servicios = []
         
         # --- TÍTULO PRINCIPAL ---
-        tk.Label(root, text="SISTEMA INTEGRAL SOFTWARE FJ", font=("Arial", 14, "bold"), bg="navy", fg="white").pack(fill="x", pady=10)
+        tk.Label(root, text="SISTEMA INTEGRAL SOFTWARE FJ", font=("Arial", 14, "bold"), bg="red3", fg="white").pack(fill="x", pady=10)
 
         # --- SISTEMA DE PESTAÑAS (Notebook) ---
         self.notebook = ttk.Notebook(root)
@@ -190,67 +198,68 @@ class InterfazSoftwareFJ:
         self.tab_servicios = ttk.Frame(self.notebook)
         self.tab_reservas = ttk.Frame(self.notebook)
 
-        self.notebook.add(self.tab_clientes, text="👥 Clientes")
-        self.notebook.add(self.tab_servicios, text="🛠️ Servicios")
-        self.notebook.add(self.tab_reservas, text="📅 Reservas")
+        self.notebook.add(self.tab_clientes, text="Clientes")
+        self.notebook.add(self.tab_servicios, text="Servicios")
+        self.notebook.add(self.tab_reservas, text="Reservas")
 
         self._construir_tab_clientes()
         self._construir_tab_servicios()
         self._construir_tab_reservas()
 
         # --- CONSOLA VISUAL (Listbox) ---
-        tk.Label(root, text="Historial de Operaciones:", font=("Arial", 10, "bold")).pack(anchor="w", padx=20)
+        ttk.Label(root, text="Historial de Operaciones:").pack(anchor="w", padx=20)
         self.listbox_logs = tk.Listbox(root, height=8, bg="#f0f0f0")
         self.listbox_logs.pack(padx=20, pady=5, fill="x")
 
     # --- PESTAÑA 1: CLIENTES ---
     def _construir_tab_clientes(self):
-        frame = tk.LabelFrame(self.tab_clientes, text="Registrar Nuevo Cliente", padx=10, pady=10)
+        
+        frame = tk.LabelFrame(self.tab_clientes, text="Registrar Nuevo Cliente",bg="white",font=("Arial", 12, "bold"), padx=10, pady=10)
         frame.pack(padx=20, pady=20, fill="x")
 
-        tk.Label(frame, text="Documento:").grid(row=0, column=0, sticky="e", pady=5)
-        self.entry_doc = tk.Entry(frame)
+        ttk.Label(frame, text="Documento:").grid(row=0, column=0, sticky="e", pady=5)
+        self.entry_doc = ttk.Entry(frame,width=50,font=("Arial", 10))
         self.entry_doc.grid(row=0, column=1, padx=5)
 
-        tk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky="e", pady=5)
-        self.entry_nom = tk.Entry(frame)
+        ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky="e", pady=5)
+        self.entry_nom = ttk.Entry(frame,width=50,font=("Arial", 10))
         self.entry_nom.grid(row=1, column=1, padx=5)
 
-        tk.Label(frame, text="Email:").grid(row=2, column=0, sticky="e", pady=5)
-        self.entry_email = tk.Entry(frame)
+        ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky="e", pady=5)
+        self.entry_email = ttk.Entry(frame,width=50,font=("Arial", 10))
         self.entry_email.grid(row=2, column=1, padx=5)
 
-        tk.Button(frame, text="Guardar Cliente", command=self.registrar_cliente, bg="green", fg="white").grid(row=3, column=0, columnspan=2, pady=10)
+        ttk.Button(frame, text="Guardar Cliente", command=self.registrar_cliente,cursor="hand2").grid(row=3, column=0, columnspan=2, pady=10)
 
     # --- PESTAÑA 2: SERVICIOS ---
     def _construir_tab_servicios(self):
-        frame = tk.LabelFrame(self.tab_servicios, text="Registrar Nuevo Servicio", padx=10, pady=10)
+        frame = tk.LabelFrame(self.tab_servicios, text="Registrar Nuevo Servicio", bg="white", font=("Arial", 12, "bold"), padx=10, pady=10)
         frame.pack(padx=20, pady=20, fill="x")
 
-        tk.Label(frame, text="Tipo de Servicio:").grid(row=0, column=0, sticky="e", pady=5)
-        self.combo_tipo_serv = ttk.Combobox(frame, values=["Sala", "Equipo", "Asesoría"], state="readonly")
+        ttk.Label(frame, text="Tipo de Servicio:").grid(row=0, column=0, sticky="e", pady=0)
+        self.combo_tipo_serv = ttk.Combobox(frame, values=["Sala", "Equipo", "Asesoría"], state="readonly", style="C.TCombobox")
         self.combo_tipo_serv.current(0)
-        self.combo_tipo_serv.grid(row=0, column=1, padx=5)
+        self.combo_tipo_serv.grid(row=0, column=1, sticky="w", padx=5)
         self.combo_tipo_serv.bind("<<ComboboxSelected>>", self._actualizar_label_extra)
 
-        tk.Label(frame, text="Código:").grid(row=1, column=0, sticky="e", pady=5)
-        self.entry_cod_serv = tk.Entry(frame)
+        ttk.Label(frame, text="Código:").grid(row=1, column=0, sticky="e", pady=5)
+        self.entry_cod_serv = ttk.Entry(frame,style="C.TEntry",width=50)
         self.entry_cod_serv.grid(row=1, column=1, padx=5)
 
-        tk.Label(frame, text="Nombre:").grid(row=2, column=0, sticky="e", pady=5)
-        self.entry_nom_serv = tk.Entry(frame)
+        ttk.Label(frame, text="Nombre:").grid(row=2, column=0, sticky="e", pady=5)
+        self.entry_nom_serv = ttk.Entry(frame,style="C.TEntry",width=50)
         self.entry_nom_serv.grid(row=2, column=1, padx=5)
 
-        tk.Label(frame, text="Precio Base ($):").grid(row=3, column=0, sticky="e", pady=5)
-        self.entry_precio_serv = tk.Entry(frame)
+        ttk.Label(frame, text="Precio Base ($):").grid(row=3, column=0, sticky="e", pady=5)
+        self.entry_precio_serv = ttk.Entry(frame,style="C.TEntry",width=50)
         self.entry_precio_serv.grid(row=3, column=1, padx=5)
 
-        self.label_extra = tk.Label(frame, text="Capacidad:")
+        self.label_extra = ttk.Label(frame, text="Capacidad:")
         self.label_extra.grid(row=4, column=0, sticky="e", pady=5)
-        self.entry_extra_serv = tk.Entry(frame)
+        self.entry_extra_serv = ttk.Entry(frame,style="C.TEntry",width=50)
         self.entry_extra_serv.grid(row=4, column=1, padx=5)
 
-        tk.Button(frame, text="Guardar Servicio", command=self.registrar_servicio, bg="blue", fg="white").grid(row=5, column=0, columnspan=2, pady=10)
+        ttk.Button(frame, text="Guardar Servicio", command=self.registrar_servicio,cursor="hand2").grid(row=5, column=0, columnspan=2, pady=10)
 
     def _actualizar_label_extra(self, event):
         tipo = self.combo_tipo_serv.get()
@@ -260,25 +269,25 @@ class InterfazSoftwareFJ:
 
     # --- PESTAÑA 3: RESERVAS ---
     def _construir_tab_reservas(self):
-        frame = tk.LabelFrame(self.tab_reservas, text="Generar Reserva", padx=10, pady=10)
+        frame = tk.LabelFrame(self.tab_reservas, text="Generar Reserva", bg="white", font=("Arial", 12, "bold"), padx=10, pady=10)
         frame.pack(padx=20, pady=20, fill="x")
 
-        tk.Label(frame, text="Seleccionar Cliente:").grid(row=0, column=0, sticky="e", pady=5)
+        ttk.Label(frame, text="Seleccionar Cliente:").grid(row=0, column=0, sticky="e", pady=5)
         self.combo_clientes = ttk.Combobox(frame, state="readonly", width=30)
-        self.combo_clientes.grid(row=0, column=1, padx=5)
+        self.combo_clientes.grid(row=0, column=1, padx=5, sticky="w")
 
-        tk.Label(frame, text="Seleccionar Servicio:").grid(row=1, column=0, sticky="e", pady=5)
+        ttk.Label(frame, text="Seleccionar Servicio:").grid(row=1, column=0, sticky="e", pady=5)
         self.combo_servicios = ttk.Combobox(frame, state="readonly", width=30)
-        self.combo_servicios.grid(row=1, column=1, padx=5)
+        self.combo_servicios.grid(row=1, column=1, padx=5, sticky="w")
 
-        tk.Label(frame, text="Cantidad/Duración:").grid(row=2, column=0, sticky="e", pady=5)
-        self.entry_duracion = tk.Entry(frame)
+        ttk.Label(frame, text="Cantidad/Duración:").grid(row=2, column=0, sticky="e", pady=5)
+        self.entry_duracion = ttk.Entry(frame,style="C.TEntry",width=50)
         self.entry_duracion.grid(row=2, column=1, padx=5)
 
         self.var_impuesto = tk.BooleanVar()
-        tk.Checkbutton(frame, text="Aplicar 19% IVA", variable=self.var_impuesto).grid(row=3, column=1, sticky="w")
+        ttk.Checkbutton(frame, text="Aplicar 19% IVA", variable=self.var_impuesto).grid(row=3, column=1, sticky="w")
 
-        tk.Button(frame, text="Procesar Reserva", command=self.procesar_reserva, bg="red3", fg="white").grid(row=4, column=0, columnspan=2, pady=10)
+        ttk.Button(frame, text="Procesar Reserva", command=self.procesar_reserva,cursor="hand2").grid(row=4, column=0, columnspan=2, pady=10)
 
     # --- FUNCIONES DE LÓGICA CON MANEJO DE EXCEPCIONES ---
     def registrar_cliente(self):
@@ -360,9 +369,9 @@ class InterfazSoftwareFJ:
         self.listbox_logs.yview(tk.END) # Auto-scroll hacia abajo
 
 
-# =====================================================================
+
 # BLOQUE DE EJECUCIÓN
-# =====================================================================
+
 if __name__ == "__main__":
     ventana_principal = tk.Tk()
     app = InterfazSoftwareFJ(ventana_principal)
