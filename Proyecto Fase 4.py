@@ -56,7 +56,7 @@ class Cliente(EntidadBase):
         super().__init__(documento)
         self.nombre = nombre  
         self.email = email
-        GestorLogs.info(f"Cliente registrado: {self.nombre}")
+        GestorLogs.info(f"Cliente registrado: {self.nombre} ID: {self._identificador}")
 
     @property
     def nombre(self): return self._nombre
@@ -87,6 +87,8 @@ class Servicio(EntidadBase):
             raise ServicioInvalidoError("El precio base no puede ser negativo.")
         self._nombre = nombre
         self._precio_base = precio_base
+        self._codigo = codigo
+        GestorLogs.info(f"Servicio registrado: {self._nombre} Código: {self._codigo}")
 
     @abstractmethod
     def calcular_costo(self, cantidad=1, aplicar_impuesto=False):
@@ -116,13 +118,12 @@ class ServicioEquipo(Servicio):
     def calcular_costo(self, dias=1, aplicar_impuesto=False):
         if dias <= 0: raise ServicioInvalidoError("Días deben ser > 0.")
         costo = self._precio_base * dias
-        if self._requiere_deposito: costo += 50000 
+        if self._requiere_deposito: costo += 50000
         if aplicar_impuesto: costo *= 1.19
         return costo
 
     def obtener_info(self):
-        return f"[Equipo] {self._nombre}"
-
+        return f"[Equipo] {self._nombre} ${self._precio_base} {self._requiere_deposito and '(Depósito requerido)' or ''}"
 class ServicioAsesoria(Servicio):
     def __init__(self, codigo, nombre, precio_base, consultor):
         super().__init__(codigo, nombre, precio_base)
@@ -146,6 +147,8 @@ class Reserva:
         self.aplicar_impuesto = aplicar_impuesto
         self.estado = "PENDIENTE"
         self.costo_total = 0.0
+        GestorLogs.info(f"Reserva registrada: {self.cliente.nombre} servicio {self.servicio._nombre}")
+
 
     def confirmar(self):
         self.estado = "CONFIRMADA"
@@ -170,25 +173,36 @@ class Reserva:
 class InterfazSoftwareFJ:    
     def __init__(self, root):
         self.root = root
-        self.root.title("Software FJ - Gestión de Reservas")
+        self.root.title("Software FJ - SIG")
         self.root.geometry("650x550+600+200")
         self.root.config(bg='white')
         self.root.resizable(False,False)
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("TButton", font=('Arial', 10,'bold'), background="white", foreground="red3", padding=5)
-        style.configure("TLabel", font=('Arial', 10,'bold'), background="white", foreground="black")
-        style.configure("TNotebook", background="white", borderwidth=0)
+        style.configure("TButton", font=("Arial", 10, "bold", "italic"), background="red3", foreground="white",borderwidth=0)
+        style.map("TButton", background=[("active", "darkred")])
+        style.configure("TLabel", font=("Arial", 10, "bold"), background="white", foreground="black")
+        style.map("TEntry", bordercolor=[("focus", "red3")],lightcolor=[("focus", "red3")], darkcolor=[("focus", "red3")])
+        style.configure("TNotebook", background="white", borderwidth=0),
         style.configure("TNotebook.Tab", background="white", foreground="black", font=("Arial", 10, "bold"))
         style.map("TNotebook.Tab", background=[("selected", "red3")], foreground=[("selected", "white")],padding=[("selected", 5)])
         style.configure("TFrame", background="white")
+        style.configure("C.TCombobox", font=("Arial", 10), padding=2)
+        style.map("C.TCombobox", fieldbackground=[("readonly", "white")], foreground=[("readonly", "black")], background=[("active", "red3")],bordercolor=[("focus", "red3")])
+        self.root.option_add('*TCombobox*Listbox.font', ('Arial', 10))
+        self.root.option_add('*TCombobox*Listbox.background', 'white')
+        self.root.option_add('*TCombobox*Listbox.foreground', 'black')
+        self.root.option_add('*TCombobox*Listbox.selectBackground', 'red3')
+        self.root.option_add('*TCombobox*Listbox.selectForeground', 'white')
+        style.configure("TCheckbutton", font=("Arial", 10), background="white", foreground="black", padding=2)
+        style.map("TCheckbutton", background=[("focus", "white")])
 
         # Base de datos en memoria (Listas)
         self.lista_clientes = []
         self.lista_servicios = []
         
         # --- TÍTULO PRINCIPAL ---
-        tk.Label(root, text="SISTEMA INTEGRAL SOFTWARE FJ", font=("Arial", 14, "bold"), bg="red3", fg="white").pack(fill="x", pady=10)
+        tk.Label(root, text="|========| SISTEMA INTEGRAL DE GESTION |========|", font=("Arial", 15, "bold", "italic"), bg="black", fg= "white").pack(fill="x", pady=10)
 
         # --- SISTEMA DE PESTAÑAS (Notebook) ---
         self.notebook = ttk.Notebook(root)
@@ -258,14 +272,26 @@ class InterfazSoftwareFJ:
         self.label_extra.grid(row=4, column=0, sticky="e", pady=5)
         self.entry_extra_serv = ttk.Entry(frame,style="C.TEntry",width=50)
         self.entry_extra_serv.grid(row=4, column=1, padx=5)
+        
+        self.var_deposito = tk.BooleanVar() # Variable que guarda True o False
+        self.check_deposito = ttk.Checkbutton(frame, text="Sí", variable=self.var_deposito)
 
         ttk.Button(frame, text="Guardar Servicio", command=self.registrar_servicio,cursor="hand2").grid(row=5, column=0, columnspan=2, pady=10)
 
     def _actualizar_label_extra(self, event):
         tipo = self.combo_tipo_serv.get()
-        if tipo == "Sala": self.label_extra.config(text="Capacidad:")
-        elif tipo == "Equipo": self.label_extra.config(text="Req. Depósito (1=Sí/0=No):")
-        elif tipo == "Asesoría": self.label_extra.config(text="Nombre Consultor:")
+        if tipo == "Sala": 
+                self.label_extra.config(text="Capacidad:")
+                self.check_deposito.grid_remove() # Oculta el checkbox
+                self.entry_extra_serv.grid()      # Muestra la caja de texto
+        elif tipo == "Equipo": 
+                self.label_extra.config(text="Requiere Depósito:")
+                self.entry_extra_serv.grid_remove() # Oculta la caja de texto
+                self.check_deposito.grid(row=4, column=1, padx=5, sticky="w") # Muestra el checkbox
+        elif tipo == "Asesoría": 
+                self.label_extra.config(text="Nombre Consultor:")
+                self.check_deposito.grid_remove() # Oculta el checkbox
+                self.entry_extra_serv.grid()      # Muestra la caja de texto
 
     # --- PESTAÑA 3: RESERVAS ---
     def _construir_tab_reservas(self):
@@ -273,11 +299,11 @@ class InterfazSoftwareFJ:
         frame.pack(padx=20, pady=20, fill="x")
 
         ttk.Label(frame, text="Seleccionar Cliente:").grid(row=0, column=0, sticky="e", pady=5)
-        self.combo_clientes = ttk.Combobox(frame, state="readonly", width=30)
+        self.combo_clientes = ttk.Combobox(frame, state="readonly", width=30,style="C.TCombobox")
         self.combo_clientes.grid(row=0, column=1, padx=5, sticky="w")
 
         ttk.Label(frame, text="Seleccionar Servicio:").grid(row=1, column=0, sticky="e", pady=5)
-        self.combo_servicios = ttk.Combobox(frame, state="readonly", width=30)
+        self.combo_servicios = ttk.Combobox(frame, state="readonly", width=30,style="C.TCombobox")
         self.combo_servicios.grid(row=1, column=1, padx=5, sticky="w")
 
         ttk.Label(frame, text="Cantidad/Duración:").grid(row=2, column=0, sticky="e", pady=5)
@@ -285,7 +311,7 @@ class InterfazSoftwareFJ:
         self.entry_duracion.grid(row=2, column=1, padx=5)
 
         self.var_impuesto = tk.BooleanVar()
-        ttk.Checkbutton(frame, text="Aplicar 19% IVA", variable=self.var_impuesto).grid(row=3, column=1, sticky="w")
+        ttk.Checkbutton(frame, text="Aplicar 19% IVA", variable=self.var_impuesto,).grid(row=3, column=1, sticky="w")
 
         ttk.Button(frame, text="Procesar Reserva", command=self.procesar_reserva,cursor="hand2").grid(row=4, column=0, columnspan=2, pady=10)
 
@@ -303,8 +329,8 @@ class InterfazSoftwareFJ:
             # Actualizamos la lista desplegable de reservas
             self.combo_clientes['values'] = [c.obtener_info() for c in self.lista_clientes]
             
-            self._log_gui(f"✅ Cliente {nom} registrado.")
-            messagebox.showinfo("Éxito", "Cliente guardado correctamente.")
+            self._log_gui(f"✅ Cliente {nom} registrado. ID: {doc}")
+           #messagebox.showinfo("Éxito", "Cliente guardado correctamente.")
             
         except SoftwareFJError as e:
             messagebox.showerror("Error de Validación", e.mensaje)
@@ -315,21 +341,31 @@ class InterfazSoftwareFJ:
             cod = self.entry_cod_serv.get()
             nom = self.entry_nom_serv.get()
             precio = float(self.entry_precio_serv.get())
-            extra = self.entry_extra_serv.get()
 
+            # Leemos el dato dinámico según la categoría elegida
             if tipo == "Sala":
+                extra = self.entry_extra_serv.get()
                 serv = ServicioSala(cod, nom, precio, int(extra))
             elif tipo == "Equipo":
-                req_dep = True if extra == "1" else False
+                # Leemos directamente si el Checkbox está marcado (True/False)
+                req_dep = self.var_deposito.get() 
                 serv = ServicioEquipo(cod, nom, precio, req_dep)
             else:
+                extra = self.entry_extra_serv.get()
                 serv = ServicioAsesoria(cod, nom, precio, extra)
 
             self.lista_servicios.append(serv)
             self.combo_servicios['values'] = [s.obtener_info() for s in self.lista_servicios]
             
-            self._log_gui(f"✅ Servicio '{nom}' registrado.")
-            messagebox.showinfo("Éxito", "Servicio creado correctamente.")
+            self._log_gui(f"✅ Servicio '{nom}' registrado. Código: {cod} Tipo: {tipo} Precio: ${precio:,.0f}")
+            #messagebox.showinfo("Éxito", "Servicio creado correctamente.")
+            
+            # Limpiar campos después de guardar
+            self.entry_cod_serv.delete(0, tk.END)
+            self.entry_nom_serv.delete(0, tk.END)
+            self.entry_precio_serv.delete(0, tk.END)
+            self.entry_extra_serv.delete(0, tk.END)
+            self.var_deposito.set(False) # Desmarcar el checkbox
             
         except ValueError:
             messagebox.showerror("Error de Formato", "El precio y capacidades deben ser números.")
@@ -353,8 +389,8 @@ class InterfazSoftwareFJ:
             reserva = Reserva(cliente_obj, servicio_obj, duracion, impuesto)
             costo_final = reserva.procesar()
 
-            self._log_gui(f"💰 Reserva cobrada a {cliente_obj.nombre}: ${costo_final:,.2f}")
-            messagebox.showinfo("Reserva Exitosa", f"=== RECIBO FJ ===\n\nCliente: {cliente_obj.nombre}\nServicio: {servicio_obj._nombre}\nTotal Pagado: ${costo_final:,.2f}")
+            self._log_gui(f"💰 Reserva cobrada a {cliente_obj.nombre}: ${costo_final:,.0f}")
+            messagebox.showinfo("Reserva Exitosa", f"=== RECIBO FJ ===\n\nCliente: {cliente_obj.nombre}\nServicio: {servicio_obj._nombre}\nTotal Pagado: ${costo_final:,.0f}")
 
         except ValueError:
             messagebox.showerror("Error", "La cantidad o duración debe ser un número entero.")
