@@ -1,13 +1,16 @@
+# Proyecto Fase 4 - SIG (Sistema Integral de Gestión)
+# Desarrollado por: Jasson Serrano,
+
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import datetime
 from abc import ABC, abstractmethod
 
-
 # LOGS Y EXCEPCIONES AL REGISTRAR EL CLIENTE O SERVICIO, O AL PROCESAR LA RESERVA
 
 class GestorLogs:
-    archivo_log = "software_fj_eventos.log"
+    archivo_log = "Log_eventos.log"
 
     @staticmethod
     def registrar(nivel, mensaje):
@@ -28,20 +31,17 @@ class GestorLogs:
         GestorLogs.registrar("ERROR", mensaje)
 
 
-class SoftwareFJError(Exception):
+class SIGError(Exception):
     def __init__(self, mensaje):
         super().__init__(mensaje)
         self.mensaje = mensaje
         GestorLogs.error(self.mensaje) # Auto-guarda en el log
 
-class ValidacionClienteError(SoftwareFJError): pass
-class ServicioInvalidoError(SoftwareFJError): pass
-class ReservaError(SoftwareFJError): pass
-
-
+class ValidacionClienteError(SIGError): pass
+class ServicioInvalidoError(SIGError): pass
+class ReservaError(SIGError): pass
 
 # CLASES DE CLIENTES, SERVICIOS Y RESERVAS
-
 
 class EntidadBase(ABC):
     def __init__(self, identificador):
@@ -67,8 +67,7 @@ class Cliente(EntidadBase):
         if not valor or not isinstance(valor, str) or len(valor.strip()) == 0:
             raise ValidacionClienteError("El documento no puede estar vacío.")
         self._documento = valor.strip()
-
-
+        
     @property
     def nombre(self): return self._nombre
 
@@ -89,7 +88,6 @@ class Cliente(EntidadBase):
 
     def obtener_info(self):
         return f"{self.nombre} (ID: {self._identificador})"
-
 
 class Servicio(EntidadBase):
     def __init__(self, codigo, nombre, precio_base):
@@ -160,7 +158,6 @@ class Reserva:
         self.costo_total = 0.0
         GestorLogs.info(f"Reserva registrada: {self.cliente.nombre} servicio {self.servicio._nombre}")
 
-
     def confirmar(self):
         self.estado = "CONFIRMADA"
 
@@ -168,7 +165,7 @@ class Reserva:
         try:
             self.confirmar()
             self.costo_total = self.servicio.calcular_costo(self.duracion, self.aplicar_impuesto)
-        except SoftwareFJError as e:
+        except SIGError as e:
             self.estado = "ERROR_LOGICO"
             raise e # Relanzamos para que la interfaz gráfica lo atrape
         except Exception as e:
@@ -177,17 +174,16 @@ class Reserva:
         else:
             return self.costo_total
 
+# INTERFAZ GRÁFICA CON TKINTER
 
-
-# INTERFAZ GRÁFICA
-
-class InterfazSoftwareFJ:    
+class SIGFront:    
     def __init__(self, root):
         self.root = root
         self.root.title("Software FJ - SIG")
         self.root.geometry("650x550+600+200")
         self.root.config(bg='white')
         self.root.resizable(False,False)
+        #Aplicacion de Estilos Personalizados
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("TButton", font=("Arial", 10, "bold", "italic"), background="red3", foreground="white",borderwidth=0)
@@ -208,7 +204,7 @@ class InterfazSoftwareFJ:
         style.configure("TCheckbutton", font=("Arial", 10), background="white", foreground="black", padding=2)
         style.map("TCheckbutton", background=[("focus", "white")])
 
-        # Base de datos en memoria (Listas)
+        # Listas para almacenar clientes y servicios registrados
         self.lista_clientes = []
         self.lista_servicios = []
         
@@ -261,8 +257,7 @@ class InterfazSoftwareFJ:
         frame.pack(padx=20, pady=20, fill="x")
 
         ttk.Label(frame, text="Tipo de Servicio:").grid(row=0, column=0, sticky="e", pady=0)
-        self.combo_tipo_serv = ttk.Combobox(frame, values=["Sala", "Equipo", "Asesoría"], state="readonly", style="C.TCombobox")
-        self.combo_tipo_serv.current(0)
+        self.combo_tipo_serv = ttk.Combobox(frame, values=["Sala", "Equipo", "Asesoría"], state="readonly", style="C.TCombobox")        
         self.combo_tipo_serv.grid(row=0, column=1, sticky="w", padx=5)
         self.combo_tipo_serv.bind("<<ComboboxSelected>>", self._actualizar_label_extra)
 
@@ -288,6 +283,7 @@ class InterfazSoftwareFJ:
 
         ttk.Button(frame, text="Guardar Servicio", command=self.registrar_servicio,cursor="hand2").grid(row=5, column=0, columnspan=2, pady=10)
 
+    # Función que actualiza el label y el campo extra según el tipo de servicio seleccionado
     def _actualizar_label_extra(self, event):
         tipo = self.combo_tipo_serv.get()
         if tipo == "Sala": 
@@ -337,8 +333,9 @@ class InterfazSoftwareFJ:
             
             self.combo_clientes['values'] = [c.obtener_info() for c in self.lista_clientes]
             
-            self._log_gui(f"✅ Cliente {nom} registrado. ID: {doc}")
+            self._log_gui(f"Cliente {nom} registrado. ID: {doc}")
            
+            # Limpiar campos después de guardar
             self.entry_doc.delete(0, tk.END)
             self.entry_nom.delete(0, tk.END)
             self.entry_email.delete(0, tk.END)
@@ -347,9 +344,9 @@ class InterfazSoftwareFJ:
             msg = "Error en el Registro del Cliente"
             messagebox.showerror("Error de Formato", msg)            
         
-        except SoftwareFJError as e:
+        except SIGError as e:
             messagebox.showerror("Error de Validación", e.mensaje)
-            self._log_gui(f"❌ Error Cliente: {e.mensaje}")
+            self._log_gui(f"Error Cliente: {e.mensaje}")
 
     def registrar_servicio(self):
         try:
@@ -373,24 +370,23 @@ class InterfazSoftwareFJ:
             self.lista_servicios.append(serv)
             self.combo_servicios['values'] = [s.obtener_info() for s in self.lista_servicios]
             
-            self._log_gui(f"✅ Servicio '{nom}' registrado. Código: {cod} Tipo: {tipo} Precio: ${precio:,.0f}")
-            #messagebox.showinfo("Éxito", "Servicio creado correctamente.")
-            
+            self._log_gui(f"Servicio '{nom}' registrado. Código: {cod} Tipo: {tipo} Precio: ${precio:,.0f}")
+          
             # Limpiar campos después de guardar
             self.entry_cod_serv.delete(0, tk.END)
             self.entry_nom_serv.delete(0, tk.END)
             self.entry_precio_serv.delete(0, tk.END)
             self.entry_extra_serv.delete(0, tk.END)
-            self.var_deposito.set(False) # Desmarcar el checkbox
+            self.var_deposito.set(False)
             
         except ValueError:
             msg = "El precio y capacidades deben ser números o no pueden estar vacíos."
             messagebox.showerror("Error de Formato", msg)
             GestorLogs.error(msg) # Se guarda en el .log
-            self._log_gui("❌ Error de formato al registrar servicio.")
-        except SoftwareFJError as e:
+            self._log_gui("Error de formato al registrar servicio.")
+        except SIGError as e:
             messagebox.showerror("Error", e.mensaje)
-            self._log_gui(f"❌ Error servicio: {e.mensaje}")
+            self._log_gui(f"Error servicio: {e.mensaje}")
 
     def procesar_reserva(self):
         idx_cli = self.combo_clientes.current()
@@ -400,44 +396,43 @@ class InterfazSoftwareFJ:
             msg = "Intento de reserva sin seleccionar cliente o servicio."
             messagebox.showwarning("Faltan datos", "Debes seleccionar un cliente y un servicio.")
             GestorLogs.error(msg) # Se guarda en el .log
-            self._log_gui("❌ Error: Faltan datos para la reserva.")
+            self._log_gui("Error: Faltan datos para la reserva.")
             return
 
         try:
             cliente_obj = self.lista_clientes[idx_cli]
             servicio_obj = self.lista_servicios[idx_ser]
             duracion = int(self.entry_duracion.get())
-            impuesto = self.var_impuesto.get() # True o False según el estado del checkbox
-
+            impuesto = self.var_impuesto.get() 
+            
             reserva = Reserva(cliente_obj, servicio_obj, duracion, impuesto)
             costo_final = reserva.procesar()
 
-            self._log_gui(f"💰 Reserva cobrada a {cliente_obj.nombre}: ${costo_final:,.0f}")
-            messagebox.showinfo("Reserva Exitosa", f"=== RECIBO FJ ===\n\nCliente: {cliente_obj.nombre}\nServicio: {servicio_obj._nombre}\nTotal Pagado: ${costo_final:,.0f}")
-            self.combo_clientes.set('')        # Vacía la selección del cliente
-            self.combo_servicios.set('')       # Vacía la selección del servicio
-            self.entry_duracion.delete(0, tk.END) # Borra el número escrito
-            self.var_impuesto.set(False) # Desmarca el checkbox de IVA
+            self._log_gui(f"Reserva cobrada a {cliente_obj.nombre}: ${costo_final:,.0f}")
+            messagebox.showinfo("Reserva Exitosa", f"=== Reserva Procesada ===\n\nCliente: {cliente_obj.nombre}\nServicio: {servicio_obj._nombre}\nTotal Pagado: ${costo_final:,.0f}")
+            
+            # Limpiar campos después de guardar
+            self.combo_clientes.set('') 
+            self.combo_servicios.set('')
+            self.entry_duracion.delete(0, tk.END) 
+            self.var_impuesto.set(False)
 
         except ValueError:
             msg = "La cantidad o duración debe ser un número entero."
             messagebox.showerror("Error", msg)
             GestorLogs.error(f"Fallo de interfaz (Reserva): {msg}")
-            self._log_gui("❌ Intento de reserva fallido por formato de texto.")
-        except SoftwareFJError as e:
+            self._log_gui("Intento de reserva fallido por formato de texto.")
+        except SIGError as e:
             messagebox.showerror("Error de Reserva", e.mensaje)
-            self._log_gui(f"❌ Error en reserva: {e.mensaje}")
+            self._log_gui(f"Error en reserva: {e.mensaje}")
             
     # FUNCION PARA MOSTRAR LOS LOGS EN LA INTERFAZ GRÁFICA
     def _log_gui(self, mensaje):        
         self.listbox_logs.insert(tk.END, mensaje)
         self.listbox_logs.yview(tk.END) # Auto-scroll hacia abajo
 
-
-
 # BLOQUE DE EJECUCIÓN
-
 if __name__ == "__main__":
     ventana_principal = tk.Tk()
-    app = InterfazSoftwareFJ(ventana_principal)
+    app = SIGFront(ventana_principal)
     ventana_principal.mainloop()
