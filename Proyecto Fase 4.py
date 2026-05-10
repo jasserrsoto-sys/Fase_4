@@ -4,7 +4,7 @@ import datetime
 from abc import ABC, abstractmethod
 
 
-# 1. MOTOR DEL SISTEMA (LOGS Y EXCEPCIONES)
+# LOGS Y EXCEPCIONES AL REGISTRAR EL CLIENTE O SERVICIO, O AL PROCESAR LA RESERVA
 
 class GestorLogs:
     archivo_log = "software_fj_eventos.log"
@@ -40,7 +40,7 @@ class ReservaError(SoftwareFJError): pass
 
 
 
-# 2. MODELO DE ENTIDADES (POO)
+# CLASES DE CLIENTES, SERVICIOS Y RESERVAS
 
 
 class EntidadBase(ABC):
@@ -56,7 +56,18 @@ class Cliente(EntidadBase):
         super().__init__(documento)
         self.nombre = nombre  
         self.email = email
-        GestorLogs.info(f"Cliente registrado: {self.nombre} ID: {self._identificador}")
+        self.documento = documento
+        GestorLogs.info(f"Cliente registrado: {self.nombre} ID: {self.documento}")
+
+    @property
+    def documento(self): return self._documento
+
+    @documento.setter
+    def documento(self, valor):
+        if not valor or not isinstance(valor, str) or len(valor.strip()) == 0:
+            raise ValidacionClienteError("El documento no puede estar vacío.")
+        self._documento = valor.strip()
+
 
     @property
     def nombre(self): return self._nombre
@@ -168,7 +179,7 @@ class Reserva:
 
 
 
-# 3. INTERFAZ GRÁFICA
+# INTERFAZ GRÁFICA
 
 class InterfazSoftwareFJ:    
     def __init__(self, root):
@@ -201,10 +212,9 @@ class InterfazSoftwareFJ:
         self.lista_clientes = []
         self.lista_servicios = []
         
-        # --- TÍTULO PRINCIPAL ---
         tk.Label(root, text="|========| SISTEMA INTEGRAL DE GESTION |========|", font=("Arial", 15, "bold", "italic"), bg="black", fg= "white").pack(fill="x", pady=10)
 
-        # --- SISTEMA DE PESTAÑAS (Notebook) ---
+        # SISTEMA DE PESTAÑAS CON NOTEBOOK
         self.notebook = ttk.Notebook(root)
         self.notebook.pack(padx=20, pady=5, fill="both", expand=True)
 
@@ -220,12 +230,12 @@ class InterfazSoftwareFJ:
         self._construir_tab_servicios()
         self._construir_tab_reservas()
 
-        # --- CONSOLA VISUAL (Listbox) ---
+        # LISTBOX PARA MOSTRAR HISTORIAL DE OPERACIONES
         ttk.Label(root, text="Historial de Operaciones:").pack(anchor="w", padx=20)
         self.listbox_logs = tk.Listbox(root, height=8, bg="#f0f0f0")
         self.listbox_logs.pack(padx=20, pady=5, fill="x")
 
-    # --- PESTAÑA 1: CLIENTES ---
+    # PESTAÑA 1: CLIENTES
     def _construir_tab_clientes(self):
         
         frame = tk.LabelFrame(self.tab_clientes, text="Registrar Nuevo Cliente",bg="white",font=("Arial", 12, "bold"), padx=10, pady=10)
@@ -245,7 +255,7 @@ class InterfazSoftwareFJ:
 
         ttk.Button(frame, text="Guardar Cliente", command=self.registrar_cliente,cursor="hand2").grid(row=3, column=0, columnspan=2, pady=10)
 
-    # --- PESTAÑA 2: SERVICIOS ---
+    # PESTAÑA 2: SERVICIOS
     def _construir_tab_servicios(self):
         frame = tk.LabelFrame(self.tab_servicios, text="Registrar Nuevo Servicio", bg="white", font=("Arial", 12, "bold"), padx=10, pady=10)
         frame.pack(padx=20, pady=20, fill="x")
@@ -293,7 +303,7 @@ class InterfazSoftwareFJ:
                 self.check_deposito.grid_remove() # Oculta el checkbox
                 self.entry_extra_serv.grid()      # Muestra la caja de texto
 
-    # --- PESTAÑA 3: RESERVAS ---
+    # PESTAÑA 3: RESERVAS
     def _construir_tab_reservas(self):
         frame = tk.LabelFrame(self.tab_reservas, text="Generar Reserva", bg="white", font=("Arial", 12, "bold"), padx=10, pady=10)
         frame.pack(padx=20, pady=20, fill="x")
@@ -315,25 +325,31 @@ class InterfazSoftwareFJ:
 
         ttk.Button(frame, text="Procesar Reserva", command=self.procesar_reserva,cursor="hand2").grid(row=4, column=0, columnspan=2, pady=10)
 
-    # --- FUNCIONES DE LÓGICA CON MANEJO DE EXCEPCIONES ---
+    # FUNCIONES DE LÓGICA CON MANEJO DE EXCEPCIONES
     def registrar_cliente(self):
         try:
             doc = self.entry_doc.get()
             nom = self.entry_nom.get()
-            correo = self.entry_email.get()
+            correo = self.entry_email.get()            
             
-            # Instanciamos. Si los datos son malos, la clase lanzará la excepción
             nuevo_cliente = Cliente(doc, nom, correo)
             self.lista_clientes.append(nuevo_cliente)
             
-            # Actualizamos la lista desplegable de reservas
             self.combo_clientes['values'] = [c.obtener_info() for c in self.lista_clientes]
             
             self._log_gui(f"✅ Cliente {nom} registrado. ID: {doc}")
-           #messagebox.showinfo("Éxito", "Cliente guardado correctamente.")
+           
+            self.entry_doc.delete(0, tk.END)
+            self.entry_nom.delete(0, tk.END)
+            self.entry_email.delete(0, tk.END)
             
+        except ValueError:
+            msg = "Error en el Registro del Cliente"
+            messagebox.showerror("Error de Formato", msg)            
+        
         except SoftwareFJError as e:
             messagebox.showerror("Error de Validación", e.mensaje)
+            self._log_gui(f"❌ Error Cliente: {e.mensaje}")
 
     def registrar_servicio(self):
         try:
@@ -368,39 +384,52 @@ class InterfazSoftwareFJ:
             self.var_deposito.set(False) # Desmarcar el checkbox
             
         except ValueError:
-            messagebox.showerror("Error de Formato", "El precio y capacidades deben ser números.")
+            msg = "El precio y capacidades deben ser números o no pueden estar vacíos."
+            messagebox.showerror("Error de Formato", msg)
+            GestorLogs.error(msg) # Se guarda en el .log
+            self._log_gui("❌ Error de formato al registrar servicio.")
         except SoftwareFJError as e:
-            messagebox.showerror("Error de Negocio", e.mensaje)
+            messagebox.showerror("Error", e.mensaje)
+            self._log_gui(f"❌ Error servicio: {e.mensaje}")
 
     def procesar_reserva(self):
         idx_cli = self.combo_clientes.current()
         idx_ser = self.combo_servicios.current()
 
         if idx_cli == -1 or idx_ser == -1:
+            msg = "Intento de reserva sin seleccionar cliente o servicio."
             messagebox.showwarning("Faltan datos", "Debes seleccionar un cliente y un servicio.")
+            GestorLogs.error(msg) # Se guarda en el .log
+            self._log_gui("❌ Error: Faltan datos para la reserva.")
             return
 
         try:
             cliente_obj = self.lista_clientes[idx_cli]
             servicio_obj = self.lista_servicios[idx_ser]
             duracion = int(self.entry_duracion.get())
-            impuesto = self.var_impuesto.get()
+            impuesto = self.var_impuesto.get() # True o False según el estado del checkbox
 
             reserva = Reserva(cliente_obj, servicio_obj, duracion, impuesto)
             costo_final = reserva.procesar()
 
             self._log_gui(f"💰 Reserva cobrada a {cliente_obj.nombre}: ${costo_final:,.0f}")
             messagebox.showinfo("Reserva Exitosa", f"=== RECIBO FJ ===\n\nCliente: {cliente_obj.nombre}\nServicio: {servicio_obj._nombre}\nTotal Pagado: ${costo_final:,.0f}")
+            self.combo_clientes.set('')        # Vacía la selección del cliente
+            self.combo_servicios.set('')       # Vacía la selección del servicio
+            self.entry_duracion.delete(0, tk.END) # Borra el número escrito
+            self.var_impuesto.set(False) # Desmarca el checkbox de IVA
 
         except ValueError:
-            messagebox.showerror("Error", "La cantidad o duración debe ser un número entero.")
+            msg = "La cantidad o duración debe ser un número entero."
+            messagebox.showerror("Error", msg)
+            GestorLogs.error(f"Fallo de interfaz (Reserva): {msg}")
             self._log_gui("❌ Intento de reserva fallido por formato de texto.")
         except SoftwareFJError as e:
             messagebox.showerror("Error de Reserva", e.mensaje)
             self._log_gui(f"❌ Error en reserva: {e.mensaje}")
-
-    def _log_gui(self, mensaje):
-        """Imprime mensajes de éxito o error en la cajita blanca inferior."""
+            
+    # FUNCION PARA MOSTRAR LOS LOGS EN LA INTERFAZ GRÁFICA
+    def _log_gui(self, mensaje):        
         self.listbox_logs.insert(tk.END, mensaje)
         self.listbox_logs.yview(tk.END) # Auto-scroll hacia abajo
 
