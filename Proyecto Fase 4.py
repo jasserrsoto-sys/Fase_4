@@ -66,6 +66,8 @@ class Cliente(EntidadBase):
     def documento(self, valor):
         if not valor or not isinstance(valor, str) or len(valor.strip()) == 0:
             raise ValidacionClienteError("El documento no puede estar vacío.")
+        if not valor.strip().isdigit():
+            raise ValidacionClienteError("El documento solo puede contener números.") #Validación en los id para que solo sean números y no letras al azar 
         self._documento = valor.strip()
         
     @property
@@ -82,6 +84,10 @@ class Cliente(EntidadBase):
 
     @email.setter
     def email(self, valor):
+        import re
+        patron = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(patron, valor.strip()):
+            raise ValidacionClienteError(f"El correo '{valor}' no tiene un formato válido.")
         if "@" not in valor or "." not in valor:
             raise ValidacionClienteError(f"El correo '{valor}' no es válido.")
         self._email = valor.strip()
@@ -210,7 +216,7 @@ class SIGFront:
         self.lista_clientes = []
         self.lista_servicios = []
         
-        tk.Label(root, text="|========| SISTEMA INTEGRAL DE GESTION |========|", font=("Montserrat", 15, "bold", "italic"), bg="black", fg= "white").pack(fill="x", pady=10)
+        tk.Label(root, text=" SISTEMA INTEGRAL DE GESTION ", font=("Montserrat", 15, "bold", "italic"), bg="black", fg= "white").pack(fill="x", pady=10)
 
         # SISTEMA DE PESTAÑAS CON NOTEBOOK
         self.notebook = ttk.Notebook(root)
