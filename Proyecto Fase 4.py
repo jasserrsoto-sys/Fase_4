@@ -303,7 +303,7 @@ class SIGFront:
                 self.check_deposito.grid_remove() # Oculta el checkbox
                 self.entry_extra_serv.grid()      # Muestra la caja de texto
         if not tipo:
-        messagebox.showerror("Error", "Debes seleccionar un tipo de servicio")
+            messagebox.showerror("Error", "Debes seleccionar un tipo de servicio")
         return
     
     # PESTAÑA 3: RESERVAS
