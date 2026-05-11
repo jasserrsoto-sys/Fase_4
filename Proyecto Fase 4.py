@@ -1,5 +1,5 @@
-# Proyecto Fase 4 - SIG (Sistema Integral de Gestión)
-# Desarrollado por: Jasson Serrano,
+# Proyecto Fase 4_Grupo 325 - SIG (Sistema Integral de Gestión)
+# Desarrollado por: Jasson Serrano (líder), Jazmin Saavedra
 
 
 import tkinter as tk
@@ -132,7 +132,9 @@ class ServicioEquipo(Servicio):
         return costo
 
     def obtener_info(self):
-        return f"[Equipo] {self._nombre} ${self._precio_base} {self._requiere_deposito and '(Depósito requerido)' or ''}"
+        deposito_texto = "(Depósito requerido)" if self._requiere_deposito else ""
+        return f"[Equipo] {self._nombre} ${self._precio_base} {deposito_texto}"
+
 class ServicioAsesoria(Servicio):
     def __init__(self, codigo, nombre, precio_base, consultor):
         super().__init__(codigo, nombre, precio_base)
@@ -186,29 +188,29 @@ class SIGFront:
         #Aplicacion de Estilos Personalizados
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("TButton", font=("Arial", 10, "bold", "italic"), background="red3", foreground="white",borderwidth=0)
+        style.configure("TButton", font=("Montserrat", 10, "bold", "italic"), background="red3", foreground="white",borderwidth=0)
         style.map("TButton", background=[("active", "darkred")])
-        style.configure("TLabel", font=("Arial", 10, "bold"), background="white", foreground="black")
+        style.configure("TLabel", font=("Montserrat", 10, "bold"), background="white", foreground="black")
         style.map("TEntry", bordercolor=[("focus", "red3")],lightcolor=[("focus", "red3")], darkcolor=[("focus", "red3")])
-        style.configure("TNotebook", background="white", borderwidth=0),
-        style.configure("TNotebook.Tab", background="white", foreground="black", font=("Arial", 10, "bold"))
+        style.configure("TNotebook", background="white", borderwidth=0)
+        style.configure("TNotebook.Tab", background="white", foreground="black", font=("Montserrat", 10, "bold"))
         style.map("TNotebook.Tab", background=[("selected", "red3")], foreground=[("selected", "white")],padding=[("selected", 5)])
         style.configure("TFrame", background="white")
-        style.configure("C.TCombobox", font=("Arial", 10), padding=2)
+        style.configure("C.TCombobox", font=("Montserrat", 10), padding=2)
         style.map("C.TCombobox", fieldbackground=[("readonly", "white")], foreground=[("readonly", "black")], background=[("active", "red3")],bordercolor=[("focus", "red3")])
-        self.root.option_add('*TCombobox*Listbox.font', ('Arial', 10))
+        self.root.option_add('*TCombobox*Listbox.font', ('Montserrat', 10))
         self.root.option_add('*TCombobox*Listbox.background', 'white')
         self.root.option_add('*TCombobox*Listbox.foreground', 'black')
         self.root.option_add('*TCombobox*Listbox.selectBackground', 'red3')
         self.root.option_add('*TCombobox*Listbox.selectForeground', 'white')
-        style.configure("TCheckbutton", font=("Arial", 10), background="white", foreground="black", padding=2)
+        style.configure("TCheckbutton", font=("Montserrat", 10), background="white", foreground="black", padding=2)
         style.map("TCheckbutton", background=[("focus", "white")])
 
         # Listas para almacenar clientes y servicios registrados
         self.lista_clientes = []
         self.lista_servicios = []
         
-        tk.Label(root, text="|========| SISTEMA INTEGRAL DE GESTION |========|", font=("Arial", 15, "bold", "italic"), bg="black", fg= "white").pack(fill="x", pady=10)
+        tk.Label(root, text="|========| SISTEMA INTEGRAL DE GESTION |========|", font=("Montserrat", 15, "bold", "italic"), bg="black", fg= "white").pack(fill="x", pady=10)
 
         # SISTEMA DE PESTAÑAS CON NOTEBOOK
         self.notebook = ttk.Notebook(root)
@@ -234,26 +236,26 @@ class SIGFront:
     # PESTAÑA 1: CLIENTES
     def _construir_tab_clientes(self):
         
-        frame = tk.LabelFrame(self.tab_clientes, text="Registrar Nuevo Cliente",bg="white",font=("Arial", 12, "bold"), padx=10, pady=10)
+        frame = tk.LabelFrame(self.tab_clientes, text="Registrar Nuevo Cliente",bg="white",font=("Montserrat", 12, "bold"), padx=10, pady=10)
         frame.pack(padx=20, pady=20, fill="x")
 
         ttk.Label(frame, text="Documento:").grid(row=0, column=0, sticky="e", pady=5)
-        self.entry_doc = ttk.Entry(frame,width=50,font=("Arial", 10))
+        self.entry_doc = ttk.Entry(frame,width=50,font=("Montserrat", 10))
         self.entry_doc.grid(row=0, column=1, padx=5)
 
         ttk.Label(frame, text="Nombre:").grid(row=1, column=0, sticky="e", pady=5)
-        self.entry_nom = ttk.Entry(frame,width=50,font=("Arial", 10))
+        self.entry_nom = ttk.Entry(frame,width=50,font=("Montserrat", 10))
         self.entry_nom.grid(row=1, column=1, padx=5)
 
         ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky="e", pady=5)
-        self.entry_email = ttk.Entry(frame,width=50,font=("Arial", 10))
+        self.entry_email = ttk.Entry(frame,width=50,font=("Montserrat", 10))
         self.entry_email.grid(row=2, column=1, padx=5)
 
         ttk.Button(frame, text="Guardar Cliente", command=self.registrar_cliente,cursor="hand2").grid(row=3, column=0, columnspan=2, pady=10)
 
     # PESTAÑA 2: SERVICIOS
     def _construir_tab_servicios(self):
-        frame = tk.LabelFrame(self.tab_servicios, text="Registrar Nuevo Servicio", bg="white", font=("Arial", 12, "bold"), padx=10, pady=10)
+        frame = tk.LabelFrame(self.tab_servicios, text="Registrar Nuevo Servicio", bg="white", font=("Montserrat", 12, "bold"), padx=10, pady=10)
         frame.pack(padx=20, pady=20, fill="x")
 
         ttk.Label(frame, text="Tipo de Servicio:").grid(row=0, column=0, sticky="e", pady=0)
@@ -262,24 +264,26 @@ class SIGFront:
         self.combo_tipo_serv.bind("<<ComboboxSelected>>", self._actualizar_label_extra)
 
         ttk.Label(frame, text="Código:").grid(row=1, column=0, sticky="e", pady=5)
-        self.entry_cod_serv = ttk.Entry(frame,style="C.TEntry",width=50)
+        self.entry_cod_serv = ttk.Entry(frame, style="C.TEntry", width=50)
         self.entry_cod_serv.grid(row=1, column=1, padx=5)
 
         ttk.Label(frame, text="Nombre:").grid(row=2, column=0, sticky="e", pady=5)
-        self.entry_nom_serv = ttk.Entry(frame,style="C.TEntry",width=50)
+        self.entry_nom_serv = ttk.Entry(frame, style="C.TEntry", width=50)
         self.entry_nom_serv.grid(row=2, column=1, padx=5)
 
         ttk.Label(frame, text="Precio Base ($):").grid(row=3, column=0, sticky="e", pady=5)
-        self.entry_precio_serv = ttk.Entry(frame,style="C.TEntry",width=50)
+        self.entry_precio_serv = ttk.Entry(frame, style="C.TEntry", width=50)
         self.entry_precio_serv.grid(row=3, column=1, padx=5)
 
         self.label_extra = ttk.Label(frame, text="Capacidad:")
         self.label_extra.grid(row=4, column=0, sticky="e", pady=5)
-        self.entry_extra_serv = ttk.Entry(frame,style="C.TEntry",width=50)
+        self.entry_extra_serv = ttk.Entry(frame, style="C.TEntry", width=50)
         self.entry_extra_serv.grid(row=4, column=1, padx=5)
         
         self.var_deposito = tk.BooleanVar() # Variable que guarda True o False
         self.check_deposito = ttk.Checkbutton(frame, text="Sí", variable=self.var_deposito)
+        self.check_deposito.grid(row=4, column=1, padx=5, sticky="w")
+        self.check_deposito.grid_remove()
 
         ttk.Button(frame, text="Guardar Servicio", command=self.registrar_servicio,cursor="hand2").grid(row=5, column=0, columnspan=2, pady=10)
 
@@ -298,10 +302,13 @@ class SIGFront:
                 self.label_extra.config(text="Nombre Consultor:")
                 self.check_deposito.grid_remove() # Oculta el checkbox
                 self.entry_extra_serv.grid()      # Muestra la caja de texto
-
+        if not tipo:
+        messagebox.showerror("Error", "Debes seleccionar un tipo de servicio")
+        return
+    
     # PESTAÑA 3: RESERVAS
     def _construir_tab_reservas(self):
-        frame = tk.LabelFrame(self.tab_reservas, text="Generar Reserva", bg="white", font=("Arial", 12, "bold"), padx=10, pady=10)
+        frame = tk.LabelFrame(self.tab_reservas, text="Generar Reserva", bg="white", font=("Montserrat", 12, "bold"), padx=10, pady=10)
         frame.pack(padx=20, pady=20, fill="x")
 
         ttk.Label(frame, text="Seleccionar Cliente:").grid(row=0, column=0, sticky="e", pady=5)
@@ -313,7 +320,7 @@ class SIGFront:
         self.combo_servicios.grid(row=1, column=1, padx=5, sticky="w")
 
         ttk.Label(frame, text="Cantidad/Duración:").grid(row=2, column=0, sticky="e", pady=5)
-        self.entry_duracion = ttk.Entry(frame,style="C.TEntry",width=50)
+        self.entry_duracion = ttk.Entry(frame, style="C.TEntry", width=50)
         self.entry_duracion.grid(row=2, column=1, padx=5)
 
         self.var_impuesto = tk.BooleanVar()
@@ -327,6 +334,15 @@ class SIGFront:
             doc = self.entry_doc.get()
             nom = self.entry_nom.get()
             correo = self.entry_email.get()            
+
+            if not doc or not nom or not correo:
+                messagebox.showerror("Error", "Todos los campos son obligatorios")
+                return
+            
+            if any(c.documento == doc for c in self.lista_clientes):
+                messagebox.showwarning("Advertencia", 
+                    "Ya existe un cliente con este documento")
+                return 
             
             nuevo_cliente = Cliente(doc, nom, correo)
             self.lista_clientes.append(nuevo_cliente)
@@ -355,6 +371,19 @@ class SIGFront:
             nom = self.entry_nom_serv.get()
             precio = float(self.entry_precio_serv.get())
 
+            if not tipo:                                                                   #Validación de selección
+                messagebox.showerror("Error", "Debes seleccionar un tipo de servicio")
+                return
+            
+            if not cod or not nom:                                                         #Validación de campos vacíos
+                messagebox.showerror("Error", "Código y nombre son obligatorios")
+                return
+            
+            if any(s.codigo == cod for s in self.lista_servicios):                         #Validación de duplicados de código
+                messagebox.showwarning("Advertencia", 
+                    "Ya existe un servicio con este código")
+                return
+            
             # Leemos el dato dinámico según la categoría elegida
             if tipo == "Sala":
                 extra = self.entry_extra_serv.get()
@@ -400,6 +429,11 @@ class SIGFront:
             return
 
         try:
+            duracion_str = self.entry_duracion.get().strip()
+            if not duracion_str:
+                messagebox.showerror("Error", "Ingresa la cantidad o duración")
+                return
+            
             cliente_obj = self.lista_clientes[idx_cli]
             servicio_obj = self.lista_servicios[idx_ser]
             duracion = int(self.entry_duracion.get())
