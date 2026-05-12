@@ -1,10 +1,11 @@
 # Proyecto Fase 4_Grupo 325 - SIG (Sistema Integral de Gestión)
-# Desarrollado por: Jasson Serrano (líder), Jazmin Saavedra
+# Desarrollado por: Jasson Serrano (líder), Jazmin Saavedra, Wilmar Tapias
 
 
 import tkinter as tk
 from tkinter import ttk, messagebox
 import datetime
+import re
 from abc import ABC, abstractmethod
 
 # LOGS Y EXCEPCIONES AL REGISTRAR EL CLIENTE O SERVICIO, O AL PROCESAR LA RESERVA
@@ -51,45 +52,79 @@ class EntidadBase(ABC):
     def obtener_info(self):
         pass
 
+# Clase encargada de gestionar y validar la información de los clientes
 class Cliente(EntidadBase):
+
     def __init__(self, documento, nombre, email):
         super().__init__(documento)
-        self.nombre = nombre  
+        self.nombre = nombre
         self.email = email
         self.documento = documento
-        GestorLogs.info(f"Cliente registrado: {self.nombre} ID: {self.documento}")
+
+        GestorLogs.info(
+            f"Cliente registrado: {self.nombre} ID: {self.documento}"
+        )
 
     @property
-    def documento(self): return self._documento
+    def documento(self):
+        return self._documento
 
     @documento.setter
     def documento(self, valor):
+
+        # Validación para evitar documentos vacíos
         if not valor or not isinstance(valor, str) or len(valor.strip()) == 0:
-            raise ValidacionClienteError("El documento no puede estar vacío.")
+            raise ValidacionClienteError(
+                "El documento no puede estar vacío."
+            )
+
+        # Validación para permitir únicamente números en el documento
         if not valor.strip().isdigit():
-            raise ValidacionClienteError("El documento solo puede contener números.") #Validación en los id para que solo sean números y no letras al azar 
+            raise ValidacionClienteError(
+                "El documento solo puede contener números."
+            )
+
         self._documento = valor.strip()
-        
+
     @property
-    def nombre(self): return self._nombre
+    def nombre(self):
+        return self._nombre
 
     @nombre.setter
     def nombre(self, valor):
+
+        # Validación para evitar nombres vacíos
         if not valor or not isinstance(valor, str) or len(valor.strip()) == 0:
-            raise ValidacionClienteError("El nombre no puede estar vacío.")
+            raise ValidacionClienteError(
+                "El nombre no puede estar vacío."
+            )
+
+        # Expresión regular que permite solo letras y espacios
+        patron = r"^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$"
+
+        # Validación para impedir números o caracteres especiales
+        if not re.match(patron, valor.strip()):
+            raise ValidacionClienteError(
+                "El nombre solo puede contener letras."
+            )
+
         self._nombre = valor.strip()
 
     @property
-    def email(self): return self._email
+    def email(self):
+        return self._email
 
     @email.setter
     def email(self, valor):
-        import re
+
+        # Validación de formato de correo electrónico
         patron = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
         if not re.match(patron, valor.strip()):
-            raise ValidacionClienteError(f"El correo '{valor}' no tiene un formato válido.")
-        if "@" not in valor or "." not in valor:
-            raise ValidacionClienteError(f"El correo '{valor}' no es válido.")
+            raise ValidacionClienteError(
+                f"El correo '{valor}' no tiene un formato válido."
+            )
+
         self._email = valor.strip()
 
     def obtener_info(self):
@@ -142,9 +177,26 @@ class ServicioEquipo(Servicio):
         return f"[Equipo] {self._nombre} ${self._precio_base} {deposito_texto}"
 
 class ServicioAsesoria(Servicio):
+
     def __init__(self, codigo, nombre, precio_base, consultor):
         super().__init__(codigo, nombre, precio_base)
-        self._consultor = consultor
+
+        # Validación para evitar nombres vacíos
+        if not consultor or len(consultor.strip()) == 0:
+            raise ServicioInvalidoError(
+                "El nombre del consultor no puede estar vacío."
+            )
+
+        # Expresión regular para permitir únicamente letras y espacios
+        patron = r"^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$"
+
+        # Validación para impedir números o caracteres especiales
+        if not re.match(patron, consultor.strip()):
+            raise ServicioInvalidoError(
+                "El nombre del consultor solo puede contener letras."
+            )
+
+        self._consultor = consultor.strip()
 
     def calcular_costo(self, sesiones=1, aplicar_impuesto=False):
         if sesiones <= 0: raise ServicioInvalidoError("Sesiones deben ser > 0.")
